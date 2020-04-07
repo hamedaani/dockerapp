@@ -3,10 +3,26 @@ jobs:
   build:
     working_directory: /dockerapp
     docker:
-      - {image: 'docker:17.05.0-ce-git'}
+      - image: docker:17.05.0-ce-git
     steps:
       - checkout
       - setup_remote_docker
-      - {run: {name: 'Install dependencies', command: "apk add --no-cache py-pip=9.0.0-r1\npip install docker-compose==1.15.0\n"}}
-      - {run: {name: 'Run tests', command: "docker-compose up -d\ndocker-compose run dockerapp python test.py\n"}}
-      - {deploy: null, name: 'Publish application docker image', command: "docker login -e $DOCKER_HUB_EMAIL -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD\ndocker tag dockerapp_dockerapp $DOCKER_HUB_USER_ID/dockerapp:$CIRCLE_SHA1\ndocker tag dockerapp_dockerapp $DOCKER_HUB_USER_ID/dockerapp:latest\ndocker push dockerapp_dockerapp $DOCKER_HUB_USER_ID/dockerapp:$CIRCLE_SHA1\ndocker push dockerapp_dockerapp $DOCKER_HUB_USER_ID/dockerapp:latest\n"}
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --no-cache py-pip=9.0.0-r1
+            pip install docker-compose==1.15.0
+      - run:
+          name: Run tests
+          command: |
+            docker-compose up -d
+            docker-compose run dockerapp python test.py
+
+      - deploy:
+        name: Publish application docker image
+        command: |
+          docker login -e $DOCKER_HUB_EMAIL -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD
+          docker tag dockerapp_dockerapp $DOCKER_HUB_USER_ID/dockerapp:$CIRCLE_SHA1
+          docker tag dockerapp_dockerapp $DOCKER_HUB_USER_ID/dockerapp:latest
+          docker push dockerapp_dockerapp $DOCKER_HUB_USER_ID/dockerapp:$CIRCLE_SHA1
+          docker push dockerapp_dockerapp $DOCKER_HUB_USER_ID/dockerapp:latest
